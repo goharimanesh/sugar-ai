@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>دانشگاه تربت حیدریه | پایش هوایی مزرعه چغندرقند</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Vazirmatn', Tahoma, sans-serif;
+    background: #0a0e1a;
+    color: #e0e6f0;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #canvas-container {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 1;
+  }
+  .panel {
+    position: fixed;
+    background: rgba(10, 20, 40, 0.92);
+    border: 1px solid rgba(80, 180, 255, 0.35);
+    border-radius: 14px;
+    padding: 16px 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 100, 200, 0.25);
+    z-index: 10;
+  }
+  #header-panel {
+    top: 20px; right: 20px;
+    max-width: 440px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .uni-logo {
+    width: 85px;
+    height: 85px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 0 25px rgba(139, 30, 90, 0.5);
+    border: 2px solid rgba(139, 30, 90, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .uni-logo img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+  .uni-info { flex: 1; }
+  .uni-info h2 {
+    font-size: 13px;
+    color: #8b1e5a;
+    background: #f0e0e8;
+    padding: 3px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 4px;
+    font-weight: bold;
+  }
+  .uni-info .uni-en {
+    font-size: 9.5px;
+    color: #78909c;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .uni-info h1 {
+    font-size: 12px;
+    color: #e0e6f0;
+    line-height: 1.7;
+    margin-bottom: 8px;
+    border-top: 1px solid rgba(79, 195, 247, 0.3);
+    padding-top: 8px;
+  }
+  .team-info { font-size: 10.5px; color: #90a4ae; line-height: 1.9; }
+  .team-info .role { color: #4fc3f7; font-weight: bold; }
+  .team-info .name { color: #e0e6f0; }
+  .team-info .divider { display: inline-block; margin: 0 4px; color: #455a64; }
+  #stats-panel { top: 20px; left: 20px; min-width: 300px; }
+  #stats-panel h2 {
+    font-size: 14px;
+    color: #4fc3f7;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+    padding-bottom: 8px;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; padding: 6px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.08);
+  }
+  .stat-label { color: #90a4ae; }
+  .stat-value { color: #4fc3f7; font-weight: bold; }
+  .stat-value.highlight { color: #66bb6a; font-size: 14px; }
+  .stat-value.warning { color: #ffa726; }
+  .stat-value.purple { color: #d81b60; }
+  .progress-bar {
+    width: 100%; height: 6px;
+    background: rgba(79, 195, 247, 0.15);
+    border-radius: 3px; overflow: hidden;
+    margin-top: 5px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4fc3f7, #66bb6a);
+    width: 0%; transition: width 0.3s;
+    border-radius: 3px;
+  }
+  #control-panel {
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 12px;
+    align-items: center; z-index: 10;
+  }
+  .btn {
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: white; border: none;
+    padding: 11px 24px; border-radius: 8px;
+    cursor: pointer; font-family: inherit;
+    font-size: 13px; transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(21, 101, 192, 0.4);
+  }
+  .btn:hover {
+    background: linear-gradient(135deg, #1976d2, #1565c0);
+    transform: translateY(-2px);
+  }
+  .btn.active {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20);
+    box-shadow: 0 4px 15px rgba(46, 125, 50, 0.5);
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn.sound-off { background: linear-gradient(135deg, #616161, #424242); }
+  #process-panel {
+    bottom: 95px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 8px;
+    background: rgba(10, 20, 40, 0.92);
+    padding: 12px 18px; border-radius: 12px;
+    border: 1px solid rgba(80, 180, 255, 0.25);
+    z-index: 10;
+  }
+  .step {
+    padding: 8px 14px; border-radius: 8px;
+    font-size: 11px; background: rgba(255,255,255,0.05);
+    color: #78909c; transition: all 0.4s;
+    white-space: nowrap;
+  }
+  .step.active {
+    background: linear-gradient(135deg, #0288d1, #01579b);
+    color: white;
+    box-shadow: 0 0 20px rgba(2, 136, 209, 0.6);
+  }
+  .step.done {
+    background: rgba(46, 125, 50, 0.3);
+    color: #66bb6a;
+    border: 1px solid rgba(102, 187, 106, 0.4);
+  }
+  #alert-box {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: rgba(10, 20, 40, 0.97);
+    border: 2px solid #4fc3f7;
+    border-radius: 16px;
+    padding: 30px 50px; text-align: center;
+    z-index: 100;
+    transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    box-shadow: 0 0 60px rgba(79, 195, 247, 0.5);
+  }
+  #alert-box.show { transform: translate(-50%, -50%) scale(1); }
+  #alert-box h3 { color: #4fc3f7; font-size: 20px; margin-bottom: 12px; }
+  #alert-box .big-num { color: #66bb6a; font-size: 40px; font-weight: bold; }
+  #alert-box p { color: #90a4ae; font-size: 13px; margin-top: 8px; }
+  #alert-box .uni-credit {
+    margin-top: 16px; padding-top: 12px;
+    border-top: 1px solid rgba(79, 195, 247, 0.3);
+    color: #8b1e5a; font-size: 11px; font-weight: bold;
+  }
+  .legend {
+    position: fixed; bottom: 20px; right: 20px;
+    font-size: 11px; color: #90a4ae;
+    background: rgba(10, 20, 40, 0.85);
+    padding: 12px 16px; border-radius: 10px;
+    border: 1px solid rgba(80, 180, 255, 0.2);
+    z-index: 10;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  #loading {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #0a0e1a;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; transition: opacity 0.8s;
+    flex-direction: column; gap: 20px;
+  }
+  #loading.hide { opacity: 0; pointer-events: none; }
+  .loader {
+    width: 60px; height: 60px;
+    border: 4px solid rgba(139, 30, 90, 0.3);
+    border-top-color: #d81b60;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading p { color: #4fc3f7; font-size: 14px; }
+  #camera-view {
+    position: fixed; bottom: 20px; left: 20px;
+    width: 270px; height: 175px;
+    background: rgba(10, 20, 40, 0.9);
+    border: 1px solid rgba(80, 180, 255, 0.4);
+    border-radius: 10px; padding: 8px;
+    z-index: 10;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  #camera-view h3 { font-size: 11px; color: #4fc3f7; text-align: center; }
+  #camera-canvas {
+    width: 100%; flex: 1; border-radius: 6px;
+    background: #000; position: relative; overflow: hidden;
+  }
+  #camera-canvas::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(45deg, #ff000033, #00ff0033, #0000ff33, #ff000033);
+    mix-blend-mode: screen;
+    animation: scanline 2s linear infinite;
+  }
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+  #camera-crosshair {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 26px; height: 26px;
+    border: 1px solid #4fc3f7; border-radius: 50%;
+  }
+  #camera-crosshair::before, #camera-crosshair::after {
+    content: ''; position: absolute; background: #4fc3f7;
+  }
+  #camera-crosshair::before { top: 50%; left: -10px; width: 8px; height: 1px; }
+  #camera-crosshair::after { top: 50%; right: -10px; width: 8px; height: 1px; }
+  .credit-bar {
+    position: fixed; top: 50%; left: 12px;
+    transform: translateY(-50%);
+    writing-mode: vertical-rl; text-orientation: mixed;
+    font-size: 9px; color: rgba(139, 30, 90, 0.7);
+    letter-spacing: 2px; z-index: 5;
+    padding: 10px 4px;
+    border-right: 1px solid rgba(139, 30, 90, 0.3);
+  }
+  #orbit-indicator {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px; height: 180px;
+    border: 2px dashed rgba(79, 195, 247, 0.3);
+    border-radius: 50%; pointer-events: none;
+    z-index: 5; opacity: 0; transition: opacity 0.5s;
+  }
+  #orbit-indicator.active { opacity: 1; }
+  #orbit-dot {
+    position: absolute; top: -6px; left: 50%;
+    width: 12px; height: 12px;
+    background: #4fc3f7; border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 15px #4fc3f7;
+  }
+  #sound-indicator {
+    position: fixed; top: 12px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 20, 40, 0.9);
+    border: 1px solid rgba(79, 195, 247, 0.4);
+    padding: 6px 16px; border-radius: 20px;
+    font-size: 11px; color: #4fc3f7;
+    z-index: 10; display: flex;
+    align-items: center; gap: 8px;
+    opacity: 0; transition: opacity 0.5s;
+  }
+  #sound-indicator.show { opacity: 1; }
+  .sound-wave {
+    display: inline-flex; gap: 2px; align-items: center;
+    height: 12px;
+  }
+  .sound-wave span {
+    width: 2px; background: #4fc3f7;
+    border-radius: 1px;
+    animation: wave 0.8s ease-in-out infinite;
+  }
+  .sound-wave span:nth-child(1) { height: 4px; animation-delay: 0s; }
+  .sound-wave span:nth-child(2) { height: 8px; animation-delay: 0.1s; }
+  .sound-wave span:nth-child(3) { height: 12px; animation-delay: 0.2s; }
+  .sound-wave span:nth-child(4) { height: 8px; animation-delay: 0.3s; }
+  .sound-wave span:nth-child(5) { height: 4px; animation-delay: 0.4s; }
+  @keyframes wave {
+    0%, 100% { transform: scaleY(0.5); }
+    50% { transform: scaleY(1); }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loader"></div>
+  <p>دانشگاه تربت حیدریه | بارگذاری سامانه پایش هوایی...</p>
+</div>
+
+<div class="credit-bar">دانشگاه تربت حیدریه — مجری: دکتر علی کوچی</div>
+
+<div id="sound-indicator">
+  <div class="sound-wave">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  صدای کوادکوپتر فعال
+</div>
+
+<div id="orbit-indicator">
+  <div id="orbit-dot"></div>
+</div>
+
+<div id="canvas-container"></div>
+
+<div id="header-panel" class="panel">
+  <div class="uni-logo">
+    <img src="logo.png" alt="لوگوی دانشگاه تربت حیدریه"
+         onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'color:#8b1e5a; font-size:10px; text-align:center; font-weight:bold;\'>دانشگاه<br>تربت<br>حیدریه</div>';">
+  </div>
+  <div class="uni-info">
+    <h2>دانشگاه تربت حیدریه</h2>
+    <div class="uni-en">UNIVERSITY OF TORBAT HEYDARIEH</div>
+    <h1>🚁 سامانه پایش هوایی و پیش‌بینی برخط تناژ چغندرقند بر پایه تصویربرداری فراطیفی کوادکوپتر و یادگیری عمیق</h1>
+    <div class="team-info">
+      <span class="role">مجری طرح:</span> <span class="name">دکتر علی کوچی</span>
+      <span class="divider">|</span><br>
+      <span class="role">همکاران طرح:</span>
+      <span class="name">دکتر مسعود گوهری منش</span>
+      <span class="divider">،</span>
+      <span class="name">مهندس مهدی جهانگیری</span><br>
+      <span class="role">کارفرما:</span> <span class="name">کارخانه قند تربت حیدریه</span><br>
+      <span style="color:#d81b60; font-weight:bold;">این پروژه توسط دانشگاه تربت حیدریه انجام می‌گیرد</span>
+    </div>
+  </div>
+</div>
+
+<div id="stats-panel" class="panel">
+  <h2>📊 داده‌های لحظه‌ای پایش هوایی</h2>
+  <div class="stat-row"><span class="stat-label">وضعیت پهپاد</span><span class="stat-value" id="status">آماده</span></div>
+  <div class="stat-row"><span class="stat-label">ارتفاع پرواز</span><span class="stat-value" id="altitude">0.0 m</span></div>
+  <div class="stat-row"><span class="stat-label">سرعت پرواز</span><span class="stat-value" id="speed">0.0 km/h</span></div>
+  <div class="stat-row"><span class="stat-label">باتری</span><span class="stat-value warning" id="battery">100%</span></div>
+  <div class="stat-row"><span class="stat-label">زاویه دورانی</span><span class="stat-value purple" id="orbitAngle">0°</span></div>
+  <div class="stat-row"><span class="stat-label">شعاع مدار</span><span class="stat-value" id="orbitRadius">0 m</span></div>
+  <div class="stat-row"><span class="stat-label">پوشش مزرعه</span><span class="stat-value" id="coverage">0%</span></div>
+  <div class="progress-bar"><div class="progress-fill" id="coverageFill"></div></div>
+  <div class="stat-row" style="margin-top:8px;"><span class="stat-label">ریشه شناسایی‌شده</span><span class="stat-value" id="count">0</span></div>
+  <div class="stat-row"><span class="stat-label">میانگین وزن</span><span class="stat-value" id="avgWeight">0.0 kg</span></div>
+  <div class="stat-row"><span class="stat-label">درصد قند</span><span class="stat-value warning" id="sugar">0.0 %</span></div>
+  <div class="stat-row"><span class="stat-label">تناژ لحظه‌ای</span><span class="stat-value highlight" id="yield">0.0 ton/ha</span></div>
+  <div class="stat-row"><span class="stat-label">تناژ تخمینی کل</span><span class="stat-value highlight" id="totalYield">0.0 ton</span></div>
+  <div class="stat-row"><span class="stat-label">تاخیر پردازش</span><span class="stat-value" id="latency">-- ms</span></div>
+  <div class="stat-row"><span class="stat-label">GPS</span><span class="stat-value" id="gps">--</span></div>
+</div>
+
+<div id="process-panel">
+  <div class="step" id="step1">۱. پرواز دورانی</div>
+  <div class="step" id="step2">۲. تصویربرداری فراطیفی</div>
+  <div class="step" id="step3">۳. استخراج ویژگی</div>
+  <div class="step" id="step4">۴. یادگیری عمیق</div>
+  <div class="step" id="step5">۵. پیش‌بینی تناژ</div>
+</div>
+
+<div id="control-panel" class="panel">
+  <button class="btn" id="startBtn">▶ شروع پرواز دورانی</button>
+  <button class="btn" id="soundBtn">🔊 صدا</button>
+  <button class="btn" id="resetBtn">↺ بازنشانی</button>
+  <button class="btn" id="viewBtn">👁 تغییر نما</button>
+</div>
+
+<div id="camera-view">
+  <h3>🎥 نمای دوربین فراطیفی کوادکوپتر</h3>
+  <div id="camera-canvas">
+    <div id="camera-crosshair"></div>
+  </div>
+</div>
+
+<div id="alert-box">
+  <h3>✅ پیش‌بینی نهایی تناژ مزرعه</h3>
+  <div class="big-num" id="finalYield">--</div>
+  <p>تن در هکتار | دقت مدل: R² = 0.89 | خطای RMSE = 6.2%</p>
+  <p style="margin-top:8px; color:#4fc3f7; font-size:11px;">
+    پوشش مزرعه: ۱۰۰٪ در یک دور کامل پرواز
+  </p>
+  <div class="uni-credit">
+    دانشگاه تربت حیدریه — مجری: دکتر علی کوچی
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="dot" style="background:#4fc3f7"></span> کوادکوپتر</div>
+  <div class="legend-item"><span class="dot" style="background:#66bb6a"></span> ریشه شناسایی‌شده</div>
+  <div class="legend-item"><span class="dot" style="background:#ffa726"></span> پرتو فراطیفی</div>
+  <div class="legend-item"><span class="dot" style="background:#d81b60"></span> مسیر دورانی پرواز</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ==================== سیستم صوتی ====================
+const audioSystem = {
+  ctx: null,
+  osc1: null,
+  osc2: null,
+  osc3: null,
+  gain: null,
+  filter: null,
+  lfo: null,
+  lfoGain: null,
+  enabled: true,
+  started: false,
+  
+  init() {
+    if (this.ctx) return;
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) {
+      console.warn('Web Audio API پشتیبانی نمی‌شود');
+      this.enabled = false;
+      return;
+    }
+    
+    // گین اصلی
+    this.gain = this.ctx.createGain();
+    this.gain.gain.value = 0;
+    
+    // فیلتر پایین‌گذر برای نرم‌تر شدن صدا
+    this.filter = this.ctx.createBiquadFilter();
+    this.filter.type = 'lowpass';
+    this.filter.frequency.value = 800;
+    this.filter.Q.value = 3;
+    
+    // اسیلاتور ۱: فرکانس پایه موتور (صدای زیر)
+    this.osc1 = this.ctx.createOscillator();
+    this.osc1.type = 'sawtooth';
+    this.osc1.frequency.value = 180;
+    
+    // اسیلاتور ۲: هارمونیک دوم
+    this.osc2 = this.ctx.createOscillator();
+    this.osc2.type = 'sawtooth';
+    this.osc2.frequency.value = 240;
+    
+    // اسیلاتور ۳: صدای باد ملخ‌ها (نویز بالا)
+    this.osc3 = this.ctx.createOscillator();
+    this.osc3.type = 'square';
+    this.osc3.frequency.value = 320;
+    
+    // LFO برای مدولاسیون صدا (شبیه‌سازی چرخش ملخ)
+    this.lfo = this.ctx.createOscillator();
+    this.lfo.type = 'sine';
+    this.lfo.frequency.value = 8; // ۸ بار در ثانیه
+    
+    this.lfoGain = this.ctx.createGain();
+    this.lfoGain.gain.value = 15;
+    
+    // اتصالات
+    this.lfo.connect(this.lfoGain);
+    this.lfoGain.connect(this.osc1.frequency);
+    this.lfoGain.connect(this.osc2.frequency);
+    
+    this.osc1.connect(this.filter);
+    this.osc2.connect(this.filter);
+    this.osc3.connect(this.filter);
+    this.filter.connect(this.gain);
+    this.gain.connect(this.ctx.destination);
+    
+    // شروع اسیلاتورها
+    this.osc1.start();
+    this.osc2.start();
+    this.osc3.start();
+    this.lfo.start();
+    
+    this.started = true;
+  },
+  
+  start() {
+    if (!this.enabled) return;
+    if (!this.started) this.init();
+    if (!this.ctx) return;
+    
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    
+    // Fade in
+    const now = this.ctx.currentTime;
+    this.gain.gain.cancelScheduledValues(now);
+    this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+    this.gain.gain.linearRampToValueAtTime(0.08, now + 0.5);
+    
+    document.getElementById('sound-indicator').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('sound-indicator').classList.remove('show');
+    }, 2500);
+  },
+  
+  stop() {
+    if (!this.ctx || !this.gain) return;
+    const now = this.ctx.currentTime;
+    this.gain.gain.cancelScheduledValues(now);
+    this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+    this.gain.gain.linearRampToValueAtTime(0, now + 0.8);
+  },
+  
+  setIntensity(value) {
+    // value: 0 تا 1 — شدت صدا بر اساس سرعت
+    if (!this.ctx || !this.gain) return;
+    if (!this.enabled) return;
+    const target = 0.05 + value * 0.05;
+    const now = this.ctx.currentTime;
+    this.gain.gain.cancelScheduledValues(now);
+    this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+    this.gain.gain.linearRampToValueAtTime(target, now + 0.3);
+    
+    // تغییر فرکانس بر اساس شدت
+    if (this.osc1) this.osc1.frequency.value = 160 + value * 80;
+    if (this.osc2) this.osc2.frequency.value = 220 + value * 100;
+  },
+  
+  toggle() {
+    this.enabled = !this.enabled;
+    if (!this.enabled) {
+      this.stop();
+    } else if (state.running) {
+      this.start();
+    }
+    return this.enabled;
+  }
+};
+
+// ==================== صحنه ====================
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0e1a);
+scene.fog = new THREE.Fog(0x0a0e1a, 60, 150);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 400);
+camera.position.set(45, 40, 55);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.target.set(0, 5, 0);
+controls.maxPolarAngle = Math.PI / 2.05;
+controls.minDistance = 15;
+controls.maxDistance = 150;
+
+// ==================== نورپردازی ====================
+const ambient = new THREE.AmbientLight(0x506080, 1.3);
+scene.add(ambient);
+
+const sun = new THREE.DirectionalLight(0xfff2cc, 2.4);
+sun.position.set(40, 60, 30);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -70;
+sun.shadow.camera.right = 70;
+sun.shadow.camera.top = 70;
+sun.shadow.camera.bottom = -70;
+scene.add(sun);
+
+const fillLight = new THREE.DirectionalLight(0x4fc3f7, 0.7);
+fillLight.position.set(-30, 20, -20);
+scene.add(fillLight);
+
+const hemi = new THREE.HemisphereLight(0x87ceeb, 0x3d2b1f, 0.6);
+scene.add(hemi);
+
+// ==================== زمین ====================
+const groundGeo = new THREE.PlaneGeometry(200, 200, 100, 100);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 1 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+
+const pos = groundGeo.attributes.position;
+for (let i = 0; i < pos.count; i++) {
+  const x = pos.getX(i), y = pos.getY(i);
+  pos.setZ(i, Math.sin(x*0.3)*0.12 + Math.cos(y*0.4)*0.12);
+}
+groundGeo.computeVertexNormals();
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ==================== چغندرقند ====================
+function createBeetLeaf() {
+  const leafGroup = new THREE.Group();
+  const leafCount = 12 + Math.floor(Math.random()*8);
+  
+  for (let i = 0; i < leafCount; i++) {
+    const leafShape = new THREE.Shape();
+    leafShape.moveTo(0, 0);
+    leafShape.bezierCurveTo(0.18, 0.3, 0.4, 0.65, 0.12, 1.3);
+    leafShape.bezierCurveTo(0.06, 1.6, -0.06, 1.6, -0.12, 1.3);
+    leafShape.bezierCurveTo(-0.4, 0.65, -0.18, 0.3, 0, 0);
+    
+    const leafGeo = new THREE.ShapeGeometry(leafShape, 14);
+    const posArr = leafGeo.attributes.position;
+    for (let j = 0; j < posArr.count; j++) {
+      const y = posArr.getY(j);
+      posArr.setZ(j, Math.sin(y * 1.3) * 0.28);
+    }
+    leafGeo.computeVertexNormals();
+    
+    const greenHue = 0.27 + Math.random()*0.07;
+    const leafMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(greenHue, 0.75, 0.22 + Math.random()*0.12),
+      roughness: 0.85, side: THREE.DoubleSide
+    });
+    
+    const leaf = new THREE.Mesh(leafGeo, leafMat);
+    
+    const petiole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.06, 0.6, 6),
+      new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(0.05, 0.65, 0.35) })
+    );
+    petiole.position.y = 0.3;
+    petiole.castShadow = true;
+    
+    const angle = (i / leafCount) * Math.PI * 2 + Math.random()*0.35;
+    const tilt = 0.35 + Math.random()*0.65;
+    const radius = 0.12 + Math.random()*0.18;
+    
+    leaf.position.set(
+      Math.cos(angle) * radius,
+      0.55 + Math.random()*0.1,
+      Math.sin(angle) * radius
+    );
+    leaf.rotation.y = -angle + Math.PI/2;
+    leaf.rotation.x = -tilt;
+    leaf.rotation.z = (Math.random()-0.5)*0.3;
+    
+    const vein = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, 1.25, 0.01),
+      new THREE.MeshStandardMaterial({ color: 0xf5f5dc })
+    );
+    vein.position.set(0, 0.6, 0.15);
+    leaf.add(vein);
+    
+    leaf.castShadow = true;
+    leaf.add(petiole);
+    leafGroup.add(leaf);
+  }
+  return leafGroup;
+}
+
+function createBeetRoot() {
+  const profile = [
+    [0.00, 0.00], [0.35, 0.05], [0.50, 0.20], [0.55, 0.45],
+    [0.50, 0.75], [0.40, 1.05], [0.28, 1.40], [0.18, 1.80],
+    [0.10, 2.20], [0.05, 2.55], [0.02, 2.85], [0.00, 3.00]
+  ];
+  const points = profile.map(p => new THREE.Vector2(p[0], p[1]));
+  const rootGeo = new THREE.LatheGeometry(points, 16);
+  
+  const posArr = rootGeo.attributes.position;
+  for (let i = 0; i < posArr.count; i++) {
+    const x = posArr.getX(i), y = posArr.getY(i), z = posArr.getZ(i);
+    const noise = (Math.sin(y*4)*0.03 + Math.cos(x*8)*0.02 + Math.sin(z*6)*0.02);
+    const factor = 1 + noise;
+    posArr.setX(i, x * factor);
+    posArr.setZ(i, z * factor);
+  }
+  rootGeo.computeVertexNormals();
+  
+  const root = new THREE.Mesh(rootGeo,
+    new THREE.MeshStandardMaterial({ color: 0xe8dcc8, roughness: 0.75 }));
+  root.scale.set(0.55, 0.35, 0.55);
+  root.castShadow = true;
+  
+  for (let i = 0; i < 6; i++) {
+    const streak = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.008, 0.015, 0.9, 4),
+      new THREE.MeshStandardMaterial({ color: 0xa08870, roughness: 0.9 })
+    );
+    const angle = (i/6) * Math.PI * 2;
+    streak.position.set(Math.cos(angle) * 0.18, 0.45, Math.sin(angle) * 0.18);
+    root.add(streak);
+  }
+  
+  const crown = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 12, 8, 0, Math.PI*2, 0, Math.PI/2),
+    new THREE.MeshStandardMaterial({ color: 0xd8c8a8, roughness: 0.9 })
+  );
+  crown.position.y = 0.05;
+  root.add(crown);
+  
+  return root;
+}
+
+// ==================== مزرعه دایره‌ای ====================
+const fieldRadius = 22;
+const plants = [];
+const rowCount = 10;
+const plantsPerRow = 14;
+
+for (let r = 0; r < rowCount; r++) {
+  const ringRadius = (r + 1) * (fieldRadius / rowCount);
+  const count = Math.floor(plantsPerRow * (ringRadius / fieldRadius)) + 3;
+  
+  for (let p = 0; p < count; p++) {
+    const angle = (p / count) * Math.PI * 2 + (r * 0.15);
+    const x = Math.cos(angle) * ringRadius;
+    const z = Math.sin(angle) * ringRadius;
+    
+    const plantGroup = new THREE.Group();
+    plantGroup.position.set(x, 0, z);
+    plantGroup.rotation.y = angle + Math.PI/2;
+    plantGroup.userData = {
+      baseWeight: 0.7 + Math.random()*0.8,
+      detected: false,
+      row: r, col: p,
+      sugarContent: 15 + Math.random()*4,
+      angle, radius: ringRadius
+    };
+    plantGroup.add(createBeetLeaf());
+    plantGroup.add(createBeetRoot());
+    scene.add(plantGroup);
+    plants.push(plantGroup);
+  }
+}
+
+// ==================== مسیر دورانی ====================
+const orbitRadius = fieldRadius + 6;
+const orbitPoints = [];
+for (let i = 0; i <= 128; i++) {
+  const a = (i / 128) * Math.PI * 2;
+  orbitPoints.push(new THREE.Vector3(
+    Math.cos(a) * orbitRadius, 0.5, Math.sin(a) * orbitRadius
+  ));
+}
+const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+const orbitMat = new THREE.LineDashedMaterial({
+  color: 0xd81b60, dashSize: 1.5, gapSize: 0.8,
+  linewidth: 2, transparent: true, opacity: 0.7
+});
+const orbitLine = new THREE.Line(orbitGeo, orbitMat);
+orbitLine.computeLineDistances();
+orbitLine.position.y = 0.5;
+scene.add(orbitLine);
+
+for (let i = 1; i <= 3; i++) {
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(orbitRadius - 0.2, orbitRadius + 0.2, 64),
+    new THREE.MeshBasicMaterial({
+      color: 0xd81b60, transparent: true,
+      opacity: 0.15 + i*0.05, side: THREE.DoubleSide
+    })
+  );
+  ring.rotation.x = -Math.PI/2;
+  ring.position.y = 0.05 + i*0.01;
+  scene.add(ring);
+}
+
+// ==================== کوادکوپتر ====================
+const drone = new THREE.Group();
+drone.position.set(orbitRadius, 15, 0);
+
+drone.add(Object.assign(
+  new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.4, 1.6),
+    new THREE.MeshStandardMaterial({ color: 0x212121, metalness: 0.7, roughness: 0.3 })
+  ), { castShadow: true }
+));
+
+const droneTop = new THREE.Mesh(
+  new THREE.BoxGeometry(1.2, 0.25, 1.2),
+  new THREE.MeshStandardMaterial({ color: 0x8b1e5a, metalness: 0.5, roughness: 0.4 })
+);
+droneTop.position.y = 0.3;
+droneTop.castShadow = true;
+drone.add(droneTop);
+
+const armMat = new THREE.MeshStandardMaterial({ color: 0x37474f, metalness: 0.8, roughness: 0.25 });
+const propellerMat = new THREE.MeshStandardMaterial({ 
+  color: 0x4fc3f7, transparent: true, opacity: 0.7, metalness: 0.9, roughness: 0.1 
+});
+const propellers = [];
+
+const armPositions = [
+  { x: 1, z: 1, angle: Math.PI/4 },
+  { x: -1, z: 1, angle: -Math.PI/4 },
+  { x: 1, z: -1, angle: -Math.PI/4 },
+  { x: -1, z: -1, angle: Math.PI/4 }
+];
+
+armPositions.forEach(ap => {
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.8, 8), armMat);
+  arm.position.set(ap.x * 0.9, 0, ap.z * 0.9);
+  arm.rotation.z = Math.PI/2;
+  arm.rotation.y = ap.angle;
+  arm.castShadow = true;
+  drone.add(arm);
+  
+  const motor = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.15, 0.15, 0.25, 12),
+    new THREE.MeshStandardMaterial({ color: 0x424242, metalness: 0.9, roughness: 0.2 })
+  );
+  motor.position.set(ap.x * 1.7, 0.05, ap.z * 1.7);
+  drone.add(motor);
+  
+  const propGroup = new THREE.Group();
+  propGroup.position.set(ap.x * 1.7, 0.25, ap.z * 1.7);
+  const bladeGeo = new THREE.BoxGeometry(1.3, 0.02, 0.12);
+  const blade1 = new THREE.Mesh(bladeGeo, propellerMat);
+  const blade2 = new THREE.Mesh(bladeGeo, propellerMat);
+  blade2.rotation.y = Math.PI/2;
+  propGroup.add(blade1);
+  propGroup.add(blade2);
+  drone.add(propGroup);
+  propellers.push(propGroup);
+});
+
+[-0.5, 0.5].forEach(x => {
+  [-0.5, 0.5].forEach(z => {
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.04, 0.6, 6),
+      new THREE.MeshStandardMaterial({ color: 0x455a64, metalness: 0.7 })
+    );
+    leg.position.set(x, -0.45, z);
+    drone.add(leg);
+  });
+});
+
+// گیمبال
+const gimbalGroup = new THREE.Group();
+gimbalGroup.position.set(0, -0.35, 0.3);
+
+gimbalGroup.add(Object.assign(
+  new THREE.Mesh(
+    new THREE.SphereGeometry(0.3, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0x263238, metalness: 0.95, roughness: 0.15 })
+  ), {}
+));
+
+const hyperCam = new THREE.Mesh(
+  new THREE.BoxGeometry(0.5, 0.35, 0.45),
+  new THREE.MeshStandardMaterial({ color: 0x8b1e5a, metalness: 0.9, roughness: 0.15 })
+);
+hyperCam.position.y = -0.35;
+gimbalGroup.add(hyperCam);
+
+const lens = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.18, 0.2, 0.22, 16),
+  new THREE.MeshStandardMaterial({ 
+    color: 0x4fc3f7, emissive: 0x0288d1, emissiveIntensity: 0.9, 
+    metalness: 1, roughness: 0.05 
+  })
+);
+lens.position.set(0, -0.55, 0.05);
+lens.rotation.x = Math.PI/2;
+gimbalGroup.add(lens);
+
+const ringLight = new THREE.Mesh(
+  new THREE.TorusGeometry(0.26, 0.03, 8, 24),
+  new THREE.MeshBasicMaterial({ color: 0x4fc3f7 })
+);
+ringLight.position.set(0, -0.58, 0.05);
+ringLight.rotation.x = Math.PI/2;
+gimbalGroup.add(ringLight);
+
+drone.add(gimbalGroup);
+
+const gpsUnit = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.15, 0.15, 0.1, 12),
+  new THREE.MeshStandardMaterial({ color: 0xffa726, emissive: 0xffa726, emissiveIntensity: 0.7 })
+);
+gpsUnit.position.set(0.5, 0.5, 0.5);
+drone.add(gpsUnit);
+
+const antenna = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.015, 0.015, 0.5, 6),
+  new THREE.MeshStandardMaterial({ color: 0x424242 })
+);
+antenna.position.set(0.5, 0.85, 0.5);
+drone.add(antenna);
+
+const beacon = new THREE.Mesh(
+  new THREE.SphereGeometry(0.1, 10, 10),
+  new THREE.MeshStandardMaterial({ color: 0xff5722, emissive: 0xff5722, emissiveIntensity: 0.8 })
+);
+beacon.position.set(0, -0.25, -0.5);
+drone.add(beacon);
+
+scene.add(drone);
+
+// ==================== پرتو فراطیفی ====================
+const scanCone = new THREE.Mesh(
+  new THREE.ConeGeometry(7, 15, 40, 1, true),
+  new THREE.MeshBasicMaterial({
+    color: 0x4fc3f7, transparent: true, opacity: 0.08,
+    side: THREE.DoubleSide, depthWrite: false
+  })
+);
+scanCone.position.set(0, -0.55, 0);
+scanCone.rotation.x = Math.PI;
+gimbalGroup.add(scanCone);
+
+const scanLines = new THREE.Group();
+for (let i = 0; i < 16; i++) {
+  const angle = (i/16) * Math.PI * 2;
+  const lineGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(Math.cos(angle)*7, -15, Math.sin(angle)*7)
+  ]);
+  const lineMat = new THREE.LineBasicMaterial({ color: 0x4fc3f7, transparent: true, opacity: 0.4 });
+  scanLines.add(new THREE.Line(lineGeo, lineMat));
+}
+gimbalGroup.add(scanLines);
+
+// ==================== حلقه‌ها و برچسب‌ها ====================
+function createDetectionRing() {
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.65, 0.06, 8, 24),
+    new THREE.MeshBasicMaterial({ color: 0x66bb6a, transparent: true, opacity: 0 })
+  );
+  ring.rotation.x = -Math.PI/2;
+  ring.position.y = 0.15;
+  return ring;
+}
+
+function createWeightLabel() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(10, 20, 40, 0.9)';
+  ctx.fillRect(0, 0, 128, 64);
+  ctx.strokeStyle = '#66bb6a';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 124, 60);
+  ctx.fillStyle = '#66bb6a';
+  ctx.font = 'bold 22px Tahoma';
+  ctx.textAlign = 'center';
+  ctx.fillText('0.0 kg', 64, 42);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0 });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(0.9, 0.45, 1);
+  sprite.position.y = 1.8;
+  sprite.userData = { canvas, ctx, texture };
+  return sprite;
+}
+
+plants.forEach(plant => {
+  const ring = createDetectionRing();
+  plant.add(ring);
+  plant.userData.ring = ring;
+  const label = createWeightLabel();
+  plant.add(label);
+  plant.userData.label = label;
+});
+
+// ==================== ذرات داده ====================
+const dataParticles = new THREE.Group();
+for (let i = 0; i < 150; i++) {
+  const p = new THREE.Mesh(
+    new THREE.SphereGeometry(0.045, 4, 4),
+    new THREE.MeshBasicMaterial({ color: 0x4fc3f7, transparent: true, opacity: 0.6 })
+  );
+  p.position.set(
+    (Math.random()-0.5)*60, Math.random()*10 + 1, (Math.random()-0.5)*60
+  );
+  p.userData = { speed: 0.02 + Math.random()*0.05, phase: Math.random()*Math.PI*2 };
+  dataParticles.add(p);
+}
+scene.add(dataParticles);
+
+// ==================== شبکه عصبی ====================
+const nnGroup = new THREE.Group();
+nnGroup.position.set(-30, 16, -15);
+const layers = [3, 5, 5, 2];
+
+layers.forEach((count, li) => {
+  for (let i = 0; i < count; i++) {
+    const node = new THREE.Mesh(
+      new THREE.SphereGeometry(0.32, 12, 12),
+      new THREE.MeshStandardMaterial({
+        color: 0x4fc3f7, emissive: 0x0288d1, emissiveIntensity: 0.8,
+        transparent: true, opacity: 0.85
+      })
+    );
+    node.position.set(li*3 - 4.5, (i - (count-1)/2)*1.1, 0);
+    nnGroup.add(node);
+  }
+});
+for (let li = 0; li < layers.length-1; li++) {
+  for (let i = 0; i < layers[li]; i++) {
+    for (let j = 0; j < layers[li+1]; j++) {
+      const from = new THREE.Vector3(li*3 - 4.5, (i-(layers[li]-1)/2)*1.1, 0);
+      const to = new THREE.Vector3((li+1)*3 - 4.5, (j-(layers[li+1]-1)/2)*1.1, 0);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([from, to]);
+      nnGroup.add(new THREE.Line(lineGeo,
+        new THREE.LineBasicMaterial({ color: 0x4fc3f7, transparent: true, opacity: 0.15 })));
+    }
+  }
+}
+scene.add(nnGroup);
+
+// ==================== حالت ====================
+let state = {
+  running: false,
+  angle: 0,
+  droneY: 15,
+  speed: 0.5,
+  detectedCount: 0,
+  totalWeight: 0,
+  totalSugar: 0,
+  step: 0,
+  battery: 100,
+  fieldLength: fieldRadius * 2,
+  fieldWidth: fieldRadius * 2,
+  totalPlants: plants.length
+};
+
+// ==================== انیمیشن ====================
+const clock = new THREE.Clock();
+const cameraCanvas = document.getElementById('camera-canvas');
+const orbitIndicator = document.getElementById('orbit-indicator');
+const orbitDot = document.getElementById('orbit-dot');
+let scanFlash = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  const t = clock.getElapsedTime();
+
+  controls.update();
+
+  nnGroup.rotation.y = Math.sin(t*0.3) * 0.4;
+  nnGroup.children.forEach((child, i) => {
+    if (child.isMesh) child.material.emissiveIntensity = 0.5 + Math.sin(t*2 + i)*0.4;
+  });
+
+  dataParticles.children.forEach(p => {
+    p.position.y += p.userData.speed * dt * 30;
+    if (p.position.y > 11) p.position.y = 1;
+    p.material.opacity = 0.3 + Math.sin(t*3 + p.userData.phase)*0.3;
+  });
+
+  // چرخش ملخ‌ها
+  const propSpeed = state.running ? 30 : 5;
+  propellers.forEach(prop => {
+    prop.rotation.y += dt * propSpeed;
+  });
+
+  if (state.running) {
+    drone.position.y = state.droneY + Math.sin(t*3) * 0.2;
+    gimbalGroup.rotation.z = Math.sin(t*2) * 0.03;
+    gimbalGroup.rotation.x = Math.sin(t*1.5) * 0.02;
+  }
+
+  beacon.material.emissiveIntensity = 0.5 + Math.sin(t*8)*0.5;
+  ringLight.material.color.setHSL(0.55, 1, 0.5 + Math.sin(t*5)*0.3);
+  scanCone.material.opacity = 0.05 + Math.sin(t*4)*0.04;
+  scanLines.children.forEach((line, i) => {
+    line.material.opacity = 0.12 + Math.sin(t*3 + i)*0.18;
+  });
+
+  // ===== حرکت دورانی =====
+  if (state.running) {
+    state.angle += state.speed * dt;
+    state.battery -= dt * 0.15;
+    
+    const droneX = Math.cos(state.angle) * orbitRadius;
+    const droneZ = Math.sin(state.angle) * orbitRadius;
+    drone.position.x = droneX;
+    drone.position.z = droneZ;
+    drone.rotation.y = -state.angle - Math.PI/2;
+    
+    const centerAngle = Math.atan2(-droneZ, -droneX);
+    gimbalGroup.rotation.y = centerAngle - drone.rotation.y - Math.PI/2;
+    
+    const angleDeg = ((state.angle * 180 / Math.PI) % 360).toFixed(0);
+    document.getElementById('orbitAngle').textContent = angleDeg + '°';
+    document.getElementById('orbitRadius').textContent = orbitRadius.toFixed(0) + ' m';
+    
+    const dotAngle = state.angle - Math.PI/2;
+    const dotX = Math.cos(dotAngle) * 90;
+    const dotY = Math.sin(dotAngle) * 90;
+    orbitDot.style.transform = `translate(calc(-50% + ${dotX}px), calc(-50% + ${dotY}px))`;
+    
+    const coverage = Math.min(100, (state.angle / (Math.PI * 2)) * 100);
+    document.getElementById('coverage').textContent = coverage.toFixed(0) + '%';
+    document.getElementById('coverageFill').style.width = coverage + '%';
+    
+    // شدت صدا بر اساس سرعت
+    audioSystem.setIntensity(0.5 + Math.sin(state.angle)*0.3);
+    
+    // تشخیص ریشه‌ها
+    plants.forEach(plant => {
+      if (!plant.userData.detected) {
+        let plantAngle = Math.atan2(plant.position.z, plant.position.x);
+        let angleDiff = Math.abs(state.angle - plantAngle);
+        if (angleDiff > Math.PI) angleDiff = 2*Math.PI - angleDiff;
+        
+        if (angleDiff < 0.28) {
+          plant.userData.detected = true;
+          state.detectedCount++;
+          state.totalWeight += plant.userData.baseWeight;
+          state.totalSugar += plant.userData.sugarContent;
+          
+          const ring = plant.userData.ring;
+          ring.material.opacity = 1;
+          ring.scale.set(0.1, 0.1, 0.1);
+          
+          const label = plant.userData.label;
+          const ctx = label.userData.ctx;
+          ctx.clearRect(0, 0, 128, 64);
+          ctx.fillStyle = 'rgba(10, 20, 40, 0.9)';
+          ctx.fillRect(0, 0, 128, 64);
+          ctx.strokeStyle = '#66bb6a';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(2, 2, 124, 60);
+          ctx.fillStyle = '#66bb6a';
+          ctx.font = 'bold 22px Tahoma';
+          ctx.textAlign = 'center';
+          ctx.fillText(plant.userData.baseWeight.toFixed(1) + ' kg', 64, 42);
+          label.userData.texture.needsUpdate = true;
+          
+          const startTime = performance.now();
+          const animRing = () => {
+            const elapsed = (performance.now() - startTime) / 1000;
+            if (elapsed < 1.5) {
+              ring.scale.setScalar(0.1 + elapsed*1.0);
+              ring.material.opacity = Math.max(0, 1 - elapsed*0.7);
+              label.material.opacity = Math.min(1, elapsed*2);
+              requestAnimationFrame(animRing);
+            } else {
+              label.material.opacity = 1;
+            }
+          };
+          animRing();
+          scanFlash = 1;
+        }
+      }
+    });
+    
+    if (state.angle >= Math.PI * 2) {
+      state.angle = 0;
+      state.running = false;
+      document.getElementById('startBtn').textContent = '✅ پوشش کامل مزرعه';
+      document.getElementById('startBtn').disabled = true;
+      state.step = 5;
+      updateSteps();
+      showFinalResult();
+      // محو کردن صدا
+      setTimeout(() => {
+        audioSystem.stop();
+        orbitIndicator.classList.remove('active');
+      }, 1500);
+    }
+  }
+
+  if (scanFlash > 0) {
+    scanFlash -= dt * 2;
+    lens.material.emissiveIntensity = 0.9 + scanFlash * 1.5;
+  }
+
+  updateStats();
+  updateCameraView(t);
+  renderer.render(scene, camera);
+}
+
+function updateStats() {
+  document.getElementById('altitude').textContent = (state.droneY + (state.running ? Math.sin(clock.getElapsedTime()*3)*0.2 : 0)).toFixed(1) + ' m';
+  document.getElementById('speed').textContent = state.running ? '18.5 km/h' : '0.0 km/h';
+  document.getElementById('battery').textContent = Math.max(0, state.battery).toFixed(0) + '%';
+  document.getElementById('count').textContent = state.detectedCount;
+  
+  const avgW = state.detectedCount > 0 ? state.totalWeight / state.detectedCount : 0;
+  document.getElementById('avgWeight').textContent = avgW.toFixed(2) + ' kg';
+  
+  const avgSugar = state.detectedCount > 0 ? state.totalSugar / state.detectedCount : 0;
+  document.getElementById('sugar').textContent = avgSugar.toFixed(1) + ' %';
+  
+  const area = Math.PI * fieldRadius * fieldRadius;
+  const density = (plants.length / area) * 10000;
+  const yieldPerHa = avgW * density / 1000;
+  document.getElementById('yield').textContent = yieldPerHa.toFixed(1) + ' ton/ha';
+  
+  const fieldArea = area / 10000;
+  const totalYield = yieldPerHa * fieldArea;
+  document.getElementById('totalYield').textContent = totalYield.toFixed(1) + ' ton';
+  
+  const lat = 22 + Math.floor(Math.random()*18);
+  document.getElementById('latency').textContent = lat + ' ms';
+  
+  const gpsText = state.running ? 
+    `Lat: 35.${Math.floor(2800 + Math.sin(state.angle)*500)}° N` : 'در حال جستجو...';
+  document.getElementById('gps').textContent = gpsText;
+}
+
+function updateCameraView(t) {
+  const hue = 200 + Math.sin(t*2)*40;
+  cameraCanvas.style.background = `linear-gradient(180deg, 
+    hsla(${hue}, 70%, 15%, 1) 0%, 
+    hsla(${hue+30}, 80%, 25%, 1) 50%, 
+    hsla(${hue+60}, 70%, 12%, 1) 100%)`;
+}
+
+function updateSteps() {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'done');
+    if (i < state.step) el.classList.add('done');
+    if (i === state.step) el.classList.add('active');
+  }
+}
+
+function showFinalResult() {
+  const avgW = state.totalWeight / Math.max(1, state.detectedCount);
+  const area = Math.PI * fieldRadius * fieldRadius;
+  const density = (plants.length / area) * 10000;
+  const finalYield = avgW * density / 1000;
+  
+  document.getElementById('finalYield').textContent = finalYield.toFixed(1);
+  document.getElementById('alert-box').classList.add('show');
+  document.getElementById('status').textContent = 'پوشش کامل ۱۰۰٪';
+  document.getElementById('gps').textContent = 'سیگنال پایدار ✓';
+  
+  setTimeout(() => {
+    document.getElementById('alert-box').classList.remove('show');
+  }, 6500);
+}
+
+// ==================== کنترل‌ها ====================
+document.getElementById('startBtn').addEventListener('click', () => {
+  if (state.running) return;
+  resetSim();
+  state.running = true;
+  document.getElementById('status').textContent = 'در حال پرواز دورانی...';
+  document.getElementById('startBtn').classList.add('active');
+  document.getElementById('startBtn').textContent = '⏳ در حال اسکن مزرعه...';
+  document.getElementById('gps').textContent = 'دریافت سیگنال...';
+  orbitIndicator.classList.add('active');
+  
+  // شروع صدا
+  if (audioSystem.enabled) {
+    audioSystem.start();
+  }
+  
+  state.step = 1;
+  updateSteps();
+  setTimeout(() => { state.step = 2; updateSteps(); }, 3000);
+  setTimeout(() => { state.step = 3; updateSteps(); }, 8000);
+  setTimeout(() => { state.step = 4; updateSteps(); }, 14000);
+  setTimeout(() => { state.step = 5; updateSteps(); }, 20000);
+});
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  const enabled = audioSystem.toggle();
+  e.target.textContent = enabled ? '🔊 صدا' : '🔇 بی‌صدا';
+  e.target.classList.toggle('sound-off', !enabled);
+  
+  if (enabled && state.running) {
+    audioSystem.start();
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  resetSim();
+});
+
+function resetSim() {
+  state.running = false;
+  state.angle = 0;
+  state.detectedCount = 0;
+  state.totalWeight = 0;
+  state.totalSugar = 0;
+  state.step = 0;
+  state.battery = 100;
+  
+  drone.position.set(orbitRadius, 15, 0);
+  drone.rotation.y = 0;
+  gimbalGroup.rotation.y = 0;
+  gimbalGroup.rotation.z = 0;
+  gimbalGroup.rotation.x = 0;
+  
+  plants.forEach(plant => {
+    plant.userData.detected = false;
+    plant.userData.ring.material.opacity = 0;
+    plant.userData.label.material.opacity = 0;
+  });
+  
+  // توقف صدا
+  audioSystem.stop();
+  
+  orbitIndicator.classList.remove('active');
+  document.getElementById('status').textContent = 'آماده';
+  document.getElementById('startBtn').classList.remove('active');
+  document.getElementById('startBtn').textContent = '▶ شروع پرواز دورانی';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('alert-box').classList.remove('show');
+  document.getElementById('gps').textContent = '--';
+  document.getElementById('battery').textContent = '100%';
+  document.getElementById('coverage').textContent = '0%';
+  document.getElementById('coverageFill').style.width = '0%';
+  document.getElementById('orbitAngle').textContent = '0°';
+  updateSteps();
+}
+
+document.getElementById('viewBtn').addEventListener('click', () => {
+  const views = [
+    { pos: [45, 40, 55], target: [0, 5, 0] },
+    { pos: [0, 80, 0.1], target: [0, 0, 0] },
+    { pos: [-50, 25, 30], target: [0, 8, 0] },
+    { pos: [20, 20, -45], target: [0, 15, 0] },
+    { pos: [35, 12, 35], target: [0, 3, 0] }
+  ];
+  const v = views[Math.floor(Math.random()*views.length)];
+  camera.position.set(...v.pos);
+  controls.target.set(...v.target);
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+animate();
+
+setTimeout(() => {
+  document.getElementById('loading').classList.add('hide');
+}, 1500);
+</script>
+
+</body>
+</html>
